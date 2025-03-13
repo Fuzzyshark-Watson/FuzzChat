@@ -1,0 +1,5 @@
+{
+  "appId": "Fuzzchat.app",
+  "appName": "FuzzChat",
+  "webDir": "dist"
+}

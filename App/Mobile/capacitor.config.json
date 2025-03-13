@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.fuzzchat",
+  "appName": "FuzzChat",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

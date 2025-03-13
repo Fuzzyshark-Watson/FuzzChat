@@ -1,0 +1,11 @@
+{
+    "name": "fuzzchat-desktop",
+    "version": "1.0.0",
+    "main": "DesktopMain.js",
+    "scripts": {
+      "start": "electron ."
+    },
+    "dependencies": {
+      "electron": "^25.9.8"
+    }
+  }

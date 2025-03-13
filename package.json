@@ -1,0 +1,21 @@
+{
+  "name": "fuzzchat",
+ 
+  "scripts": {
+    "start:desktop": "cd App/Desktop && npm start",
+    "serve:mobile": "cd App/Mobile && npm run serve",
+    "build:mobile": "cd App/Mobile && npm run build",
+    "lint:mobile": "cd App/Mobile && npm run lint",
+    "start:api": "cd API && npm start",
+    "start:servers": "concurrently \"cd API && node server.js\" \"cd API && node websocketServer.js\"",
+    "start:all": "concurrently \"npm run start:servers\" \"npm run serve:mobile\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "axios": "^1.8.2",
+    "cors": "^2.8.5",
+    "vuex": "^4.1.0"
+  }
+}

@@ -1,0 +1,68 @@
+:root {
+  --black: #000000;
+  --lightroyalpurple: #7A1EBB; /* Slightly lighter color */
+  --royalpurple: #6A0DAD;
+  --darkpurple: #4B0082;
+
+  --lavender: #E6E6FA;
+  --thistle: #D8BFD8;
+  --mauve: #DDA0DD;
+  --lilac: #C8A2C8;
+  --platinum: #E5E4E2;
+  --softpink: #F4C2C2;
+
+  --gold: #FFD700;
+  --orange: #FFA500;
+  --mediumgrey: #cccccc; /* A medium grey for active tab */
+  --darkgrey: #333333; /* A darker grey for unselected text */
+  --warmgray: #2F4F4F;
+  --lightgray: #D3D3D3;
+  --white: #FFFFFF;
+}
+
+body {
+  background-color: var(--darkgrey);
+  color: var(--lightgray);
+}
+
+h1, h2, h3 {
+  color: var(--lightgray);
+}
+
+button.primary {
+  background-color: var(--darkgrey);
+  color: var(--lightgray);
+  border-radius: 4px;
+}
+
+button.secondary {
+  background-color: var(--darkgrey);
+  color: var(--lightgray);
+  border-radius: 4px;
+}
+
+footer {
+  background-color: var(--warmgray);
+}
+
+.border {
+  border: 4px solid var(--darkgrey);
+}
+
+label {
+  color: var(--warmgray);
+}
+
+button {
+  background-color: var(--darkgrey);
+  border: 1px solid var(--warmgray);
+  color: var(--lightgray);
+  border-radius: 4px;
+}
+
+input, textarea {
+  background-color: var(--darkgrey);
+  border: 1px solid var(--warmgray);
+  color: var(--lightgray);
+  border-radius: 4px;
+}

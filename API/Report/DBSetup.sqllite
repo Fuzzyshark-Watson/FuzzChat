@@ -1,0 +1,56 @@
+-- Enable foreign key constraints
+PRAGMA foreign_keys = ON;
+
+-- Create Accounts table
+CREATE TABLE IF NOT EXISTS Accounts (
+  account_id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL,
+  name TEXT NOT NULL,
+  password TEXT NOT NULL
+);
+
+-- Create Characters table
+CREATE TABLE IF NOT EXISTS Characters (
+  character_id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  gender TEXT NOT NULL,
+  status TEXT NOT NULL,
+  account_id INTEGER,
+  FOREIGN KEY (account_id) REFERENCES Accounts (account_id) ON DELETE CASCADE
+);
+
+-- Create Bookmarks table
+CREATE TABLE IF NOT EXISTS Bookmarks (
+  bookmark_id INTEGER PRIMARY KEY,
+  url TEXT NOT NULL,
+  account_id INTEGER,
+  FOREIGN KEY (account_id) REFERENCES Accounts (account_id) ON DELETE CASCADE
+);
+
+-- Create Connections table
+CREATE TABLE IF NOT EXISTS Connections (
+  connection_id INTEGER PRIMARY KEY,
+  ticket TEXT NOT NULL,
+  account_id INTEGER,
+  creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  time_since_last_check INTEGER,
+  FOREIGN KEY (account_id) REFERENCES Accounts (account_id) ON DELETE CASCADE
+);
+
+-- Create Channels table
+CREATE TABLE IF NOT EXISTS Channels (
+  channel_id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  account_id INTEGER,
+  creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES Accounts (account_id) ON DELETE CASCADE
+);
+
+-- Create Channels_Characters table (junction table for many-to-many relationship)
+CREATE TABLE IF NOT EXISTS Channels_Characters (
+  Channels_channel_id INTEGER,
+  Characters_character_id INTEGER,
+  PRIMARY KEY (Channels_channel_id, Characters_character_id),
+  FOREIGN KEY (Channels_channel_id) REFERENCES Channels (channel_id) ON DELETE CASCADE,
+  FOREIGN KEY (Characters_character_id) REFERENCES Characters (character_id) ON DELETE CASCADE
+);

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      box-sizing: border-box;
+      margin-bottom: 220px; /* Space for the fixed debug console */
+    }
+    #messageList {
+      list-style-type: none;
+      padding: 0;
+    }
+    #messageList li {
+      padding: 5px;
+      border-bottom: 1px solid #ddd;
+    }
+    #debugConsole {
+      background: #222;
+      color: #0f0;
+      padding: 10px;
+      height: 200px;
+      overflow-y: auto;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+    .form-group {
+      margin-bottom: 10px;
+    }
+    .crud-section {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <h1>WebSocket Chat</h1>
+
+    <!-- Test Page setup -->
+    <div>
+      <h2>Select</h2>
+      <button onclick="selectTable('Accounts')">Accounts</button>
+      <button onclick="selectTable('Characters')">Characters</button>
+      <button onclick="selectTable('Messages')">Messages</button>
+      <button onclick="selectTable('Bookmarks')">Bookmarks</button>
+      <button onclick="selectTable('Channels')">Channels</button>
+    </div>
+
+    <div>
+      <h2>CRUD</h2>
+      <label>
+        <input type="radio" name="crudOperation" value="create" checked onclick="updateCrudTemplate()"> Create
+      </label>
+      <label>
+        <input type="radio" name="crudOperation" value="read" onclick="updateCrudTemplate()"> Read
+      </label>
+      <label>
+        <input type="radio" name="crudOperation" value="update" onclick="updateCrudTemplate()"> Update
+      </label>
+      <label>
+        <input type="radio" name="crudOperation" value="delete" onclick="updateCrudTemplate()"> Delete
+      </label>
+      <button onclick="sendCrudOperation()">SEND</button>
+      <button onclick="clearTable()">Clear Table</button> <!-- Clear Table Button -->
+    </div>
+
+    <div>
+      <h2>Data Fields</h2>
+      <label>
+        <input type="radio" name="dataFormat" value="json" checked onclick="updateDataField()"> JSON
+      </label>
+      <label>
+        <input type="radio" name="dataFormat" value="sql" onclick="updateDataField()"> SQL
+      </label>
+      <textarea id="dataField" placeholder="Data"></textarea>
+    </div>
+
+    <!-- Table to display fetched data -->
+    <h2>Table Data</h2>
+    <table id="dataTable">
+      <thead>
+        <tr>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Debug console -->
+  <div id="debugConsoleContainer">
+    <pre id="debugConsole">Debug console initialized...</pre>
+  </div>
+
+  <script>
+    let ws;
+    let selectedTable = '';
+
+    const templates = {
+    Accounts: {
+      create: {
+        json: JSON.stringify({ email: "example@example.com", name: "John Doe", password: "password123" }, null, 2),
+        sql: "INSERT INTO Accounts (email, name, password) VALUES ('example@example.com', 'John Doe', 'password123');"
+      },
+      read: {
+        json: JSON.stringify({ table: "Accounts" }, null, 2),
+        sql: "SELECT * FROM Accounts;"
+      },
+      update: {
+        json: JSON.stringify({ account_id: 1, email: "example@example.com", name: "John Doe", password: "newpassword123" }, null, 2),
+        sql: "UPDATE Accounts SET name = 'John Doe', password = 'newpassword123' WHERE account_id = 1;"
+      },
+      delete: {
+        json: JSON.stringify({ account_id: 1 }, null, 2),
+        sql: "DELETE FROM Accounts WHERE account_id = 1;"
+      }
+    },
+    Characters: {
+      create: {
+        json: JSON.stringify({ name: "CharacterName", gender: "Male", status: "Active", account_id: 1 }, null, 2),
+        sql: "INSERT INTO Characters (name, gender, status, account_id) VALUES ('CharacterName', 'Male', 'Active', 1);"
+      },
+      read: {
+        json: JSON.stringify({ table: "Characters" }, null, 2),
+        sql: "SELECT * FROM Characters;"
+      },
+      update: {
+        json: JSON.stringify({ character_id: 1, status: "Inactive" }, null, 2),
+        sql: "UPDATE Characters SET status = 'Inactive' WHERE character_id = 1;"
+      },
+      delete: {
+        json: JSON.stringify({ character_id: 1 }, null, 2),
+        sql: "DELETE FROM Characters WHERE character_id = 1;"
+      }
+    },
+    Messages: {
+      create: {
+        json: JSON.stringify({ MessageContent: "Hello, world!", account_id: 1 }, null, 2),
+        sql: "INSERT INTO Messages (MessageContent, account_id) VALUES ('Hello, world!', 1);"
+      },
+      read: {
+        json: JSON.stringify({ table: "Messages" }, null, 2),
+        sql: "SELECT * FROM Messages;"
+      },
+      update: {
+        json: JSON.stringify({ message_id: 1, MessageContent: "Hello, universe!" }, null, 2),
+        sql: "UPDATE Messages SET MessageContent = 'Hello, universe!' WHERE message_id = 1;"
+      },
+      delete: {
+        json: JSON.stringify({ message_id: 1 }, null, 2),
+        sql: "DELETE FROM Messages WHERE message_id = 1;"
+      }
+    },
+    Bookmarks: {
+      create: {
+        json: JSON.stringify({ bookmarked_Character_id: 1, account_id: 1 }, null, 2),
+        sql: "INSERT INTO Bookmarks (bookmarked_Character_id, account_id) VALUES (1, 1);"
+      },
+      read: {
+        json: JSON.stringify({ table: "Bookmarks" }, null, 2),
+        sql: "SELECT * FROM Bookmarks;"
+      },
+      update: {
+        json: JSON.stringify({ bookmark_id: 1, bookmarked_Character_id: 2 }, null, 2),
+        sql: "UPDATE Bookmarks SET bookmarked_Character_id = 2 WHERE bookmark_id = 1;"
+      },
+      delete: {
+        json: JSON.stringify({ bookmark_id: 1 }, null, 2),
+        sql: "DELETE FROM Bookmarks WHERE bookmark_id = 1;"
+      }
+    },
+    Channels: {
+      create: {
+        json: JSON.stringify({ name: "ChannelName", account_id: 1 }, null, 2),
+        sql: "INSERT INTO Channels (name, account_id) VALUES ('ChannelName', 1);"
+      },
+      read: {
+        json: JSON.stringify({ table: "Channels" }, null, 2),
+        sql: "SELECT * FROM Channels;"
+      },
+      update: {
+        json: JSON.stringify({ channel_id: 1, name: "NewChannelName" }, null, 2),
+        sql: "UPDATE Channels SET name = 'NewChannelName' WHERE channel_id = 1;"
+      },
+      delete: {
+        json: JSON.stringify({ channel_id: 1 }, null, 2),
+        sql: "DELETE FROM Channels WHERE channel_id = 1;"
+      }
+    }
+  };
+
+    function selectTable(table) {
+      selectedTable = table;
+      logDebug(`Selected table: ${table}`);
+      updateCrudTemplate();
+    }
+
+    function updateDataField() {
+      const format = document.querySelector('input[name="dataFormat"]:checked').value;
+      const operation = document.querySelector('input[name="crudOperation"]:checked').value;
+      document.getElementById('dataField').value = templates[selectedTable][operation][format];
+    }
+
+    function updateCrudTemplate() {
+      updateDataField();
+      const operation = document.querySelector('input[name="crudOperation"]:checked').value;
+      logDebug(`Selected CRUD operation: ${operation}`);
+    }
+
+    function sendCrudOperation() {
+      const operation = document.querySelector('input[name="crudOperation"]:checked').value;
+      const data = document.getElementById('dataField').value;
+      const format = document.querySelector('input[name="dataFormat"]:checked').value;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: `${operation.toUpperCase()}_DATA`, table: selectedTable, format, data }));
+        logDebug({ type: `${operation.toUpperCase()}_DATA`, table: selectedTable, format, data });
+        logDebug(`${operation.toUpperCase()}_DATA sent for table: ${selectedTable} with format: ${format}`);
+      } else {
+        logDebug(`WebSocket not connected. Cannot send ${operation.toUpperCase()}_DATA.`);
+      }
+    }
+
+    function clearTable() {
+      const dataTable = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+      const dataTableHead = document.getElementById('dataTable').getElementsByTagName('thead')[0];
+      dataTable.innerHTML = ''; // Clear existing data
+      dataTableHead.innerHTML = ''; // Clear existing headers
+    }
+
+    // Establish WebSocket connection on page load
+    window.onload = () => {
+      ws = new WebSocket('ws://localhost:3000');
+      ws.onopen = () => {
+        console.log('Connected to WebSocket server');
+        logDebug('Connected to WebSocket server');
+      };
+
+      // Handle incoming WebSocket messages
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.error) {
+            console.error("Server Error:", data.error);
+            alert("Error: " + data.error);
+            logDebug("Error: " + data.error);
+            return;
+          }
+
+          if (data.table && data.data) {
+            displayTableData(data.table, data.data);
+          } else {
+            logDebug("Received: " + event.data);
+          }
+        } catch (err) {
+          console.error("Invalid JSON from server:", event.data);
+          logDebug("Invalid JSON: " + event.data);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('Disconnected from WebSocket server');
+        logDebug('Disconnected from WebSocket server');
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        logDebug('WebSocket error: ' + error);
+      };
+    };
+
+    // Display fetched table data
+    function displayTableData(table, data) {
+      logDebug(`Displaying data for table: ${table}`);
+      logDebug(`Data: ${JSON.stringify(data)}`);
+      const dataTable = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+      const dataTableHead = document.getElementById('dataTable').getElementsByTagName('thead')[0];
+      dataTable.innerHTML = ''; // Clear existing data
+      dataTableHead.innerHTML = ''; // Clear existing headers
+
+      if (data.length > 0) {
+        // Create header row
+        const headerRow = document.createElement('tr');
+        Object.keys(data[0]).forEach(key => {
+          const th = document.createElement('th');
+          th.textContent = key;
+          headerRow.appendChild(th);
+        });
+        dataTableHead.appendChild(headerRow);
+
+        // Create data rows
+        data.forEach(row => {
+          const tr = document.createElement('tr');
+          Object.keys(row).forEach(key => {
+            const td = document.createElement('td');
+            td.textContent = row[key];
+            tr.appendChild(td);
+          });
+          dataTable.appendChild(tr);
+        });
+      }
+    }
+
+    // Log debug messages to the console
+    function logDebug(message) {
+      const consoleEl = document.getElementById('debugConsole');
+      consoleEl.textContent += message + "\n";
+      consoleEl.scrollTop = consoleEl.scrollHeight; // Auto-scroll
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+This part of the App is my desktop version, which uses Electron
+
+Package.json contains the packages that belong to this wing of the project.
+
+During startup in desktopmain.js, it runs the preload.js which is supposed to make the application more secure. As part of the electron application.
+
+This is the lower priority version, so once the mobile version works, I will rework code to suit a desktop version.
